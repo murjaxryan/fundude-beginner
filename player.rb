@@ -20,7 +20,11 @@ class Player
   end
 
   def proceed
-    warrior.feel.empty? ? warrior.walk! : warrior.attack!
+    warrior.feel.empty? ? warrior.walk! : handle_encounter
+  end
+
+  def handle_encounter
+    warrior.feel.captive? ? warrior.rescue! : warrior.attack!
   end
 
   def update_health
