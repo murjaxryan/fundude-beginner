@@ -1,8 +1,9 @@
 class Player
   attr_reader :warrior
-  attr_accessor :health
+  attr_accessor :health, :captive_rescued
   def play_turn(received_warrior)
     set_warrior(received_warrior)
+    set_captive_rescued
     play_action
     update_health
   end
@@ -16,15 +17,40 @@ class Player
   end
 
   def not_losing_health?
-    !(health && warrior.health < health)
+    !losing_health?
+  end
+
+  def losing_health?
+    health && warrior.health < health
   end
 
   def proceed
-    warrior.feel.empty? ? warrior.walk! : handle_encounter
+    warrior.feel.empty? ? choose_direction : handle_encounter
+  end
+
+  def choose_direction
+    captive_rescued ? cautious_walk : find_captive
+  end
+
+  def cautious_walk
+    should_back_away? ? warrior.walk!(:backward) : warrior.walk!
+  end
+
+  def find_captive
+    warrior.feel(:backward).empty? ? warrior.walk!(:backward) : rescue_captive
+  end
+
+  def rescue_captive
+    warrior.rescue!(:backward)
+    self.captive_rescued = true
   end
 
   def handle_encounter
     warrior.feel.captive? ? warrior.rescue! : warrior.attack!
+  end
+
+  def should_back_away?
+    warrior.health < 10 && losing_health?
   end
 
   def update_health
@@ -33,5 +59,9 @@ class Player
 
   def set_warrior(received_warrior)
     @warrior = received_warrior
+  end
+
+  def set_captive_rescued
+    @captive_rescued ||= false
   end
 end
