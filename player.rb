@@ -1,17 +1,16 @@
 class Player
-  attr_accessor :warrior, :health, :first_captive_rescued
+  attr_accessor :warrior, :health
   def play_turn(received_warrior)
     set_warrior(received_warrior)
-    set_captive_rescued
     play_action
     update_health
   end
 
   def play_action
-    warrior_can_rest? ? warrior.rest! : proceed
+    warrior_needs_rest? ? warrior.rest! : proceed
   end
 
-  def warrior_can_rest?
+  def warrior_needs_rest?
     not_losing_health? && warrior.health < 20 && warrior.feel.empty?
   end
 
@@ -23,8 +22,13 @@ class Player
     health && warrior.health < health
   end
 
+  def captive_behind?
+    look_results = warrior.look(:backward).map{ |result| result.to_s }
+    look_results == ['nothing', 'nothing', 'Archer']
+  end
+
   def proceed
-    first_captive_rescued ? proceed_forward : proceed_backward
+    captive_behind? ? proceed_backward : proceed_forward
   end
 
   def proceed_backward
@@ -55,7 +59,7 @@ class Player
   end
 
   def choose_direction
-    first_captive_rescued ? cautious_walk : find_captive
+    cautious_walk
   end
 
   def cautious_walk
@@ -63,24 +67,15 @@ class Player
   end
 
   def find_captive
-    warrior.feel(:backward).empty? ? warrior.walk!(:backward) : rescue_captive
-  end
-
-  def rescue_captive
-    warrior.rescue!(:backward)
-    self.first_captive_rescued = true
+    warrior.feel(:backward).empty? ? warrior.walk!(:backward) : warrior.rescue!(:backward)
   end
 
   def handle_encounter
-    safe_encounter? ? handle_safe_encounter : handle_enemy_encounter
+    safe_encounter? ? handle_safe_encounter : warrior.shoot!
   end
 
   def handle_safe_encounter
     warrior.feel.captive? ? warrior.rescue! : warrior.pivot!(:backward)
-  end
-
-  def handle_enemy_encounter
-    warrior.feel.empty? ? warrior.shoot! : warrior.attack!
   end
 
   def safe_encounter?
@@ -97,9 +92,5 @@ class Player
 
   def set_warrior(received_warrior)
     self.warrior = received_warrior
-  end
-
-  def set_captive_rescued
-    self.first_captive_rescued ||= false
   end
 end
