@@ -1,5 +1,5 @@
 class Player
-  attr_accessor :warrior, :health, :captive_rescued
+  attr_accessor :warrior, :health, :first_captive_rescued
   def play_turn(received_warrior)
     set_warrior(received_warrior)
     set_captive_rescued
@@ -24,6 +24,19 @@ class Player
   end
 
   def proceed
+    first_captive_rescued ? proceed_forward : proceed_backward
+  end
+
+  def proceed_backward
+    archer_behind? ? warrior.shoot!(:backward) : find_captive
+  end
+
+  def archer_behind?
+    look_results = warrior.look(:backward)
+    look_results.any?{ |result| result.to_s == 'Archer' }
+  end
+
+  def proceed_forward
     safe_to_walk? ? choose_direction : handle_encounter
   end
 
@@ -36,13 +49,13 @@ class Player
   end
 
   def wizard_ahead?
-    safe_encounters = ['nothing', 'wall']
+    safe_encounters = ['nothing', 'Captive', 'wall']
     look_results = warrior.look.reject{ |result| safe_encounters.include?(result.to_s) }
     look_results.any?
   end
 
   def choose_direction
-    captive_rescued ? cautious_walk : find_captive
+    first_captive_rescued ? cautious_walk : find_captive
   end
 
   def cautious_walk
@@ -55,7 +68,7 @@ class Player
 
   def rescue_captive
     warrior.rescue!(:backward)
-    self.captive_rescued = true
+    self.first_captive_rescued = true
   end
 
   def handle_encounter
@@ -87,6 +100,6 @@ class Player
   end
 
   def set_captive_rescued
-    self.captive_rescued ||= false
+    self.first_captive_rescued ||= false
   end
 end
