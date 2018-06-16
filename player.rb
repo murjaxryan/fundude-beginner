@@ -24,7 +24,21 @@ class Player
   end
 
   def proceed
-    warrior.feel.empty? ? choose_direction : handle_encounter
+    safe_to_walk? ? choose_direction : handle_encounter
+  end
+
+  def safe_to_walk?
+    warrior.feel.empty? && no_wizard_ahead?
+  end
+
+  def no_wizard_ahead?
+    !wizard_ahead?
+  end
+
+  def wizard_ahead?
+    safe_encounters = ['nothing', 'wall']
+    look_results = warrior.look.reject{ |result| safe_encounters.include?(result.to_s) }
+    look_results.any?
   end
 
   def choose_direction
@@ -45,11 +59,15 @@ class Player
   end
 
   def handle_encounter
-    safe_encounter? ? handle_safe_encounter : warrior.attack!
+    safe_encounter? ? handle_safe_encounter : handle_enemy_encounter
   end
 
   def handle_safe_encounter
     warrior.feel.captive? ? warrior.rescue! : warrior.pivot!(:backward)
+  end
+
+  def handle_enemy_encounter
+    warrior.feel.empty? ? warrior.shoot! : warrior.attack!
   end
 
   def safe_encounter?
