@@ -1,6 +1,5 @@
 class Player
-  attr_reader :warrior
-  attr_accessor :health, :captive_rescued
+  attr_accessor :warrior, :health, :captive_rescued
   def play_turn(received_warrior)
     set_warrior(received_warrior)
     set_captive_rescued
@@ -46,7 +45,15 @@ class Player
   end
 
   def handle_encounter
-    warrior.feel.captive? ? warrior.rescue! : warrior.attack!
+    safe_encounter? ? handle_safe_encounter : warrior.attack!
+  end
+
+  def handle_safe_encounter
+    warrior.feel.captive? ? warrior.rescue! : warrior.pivot!(:backward)
+  end
+
+  def safe_encounter?
+    warrior.feel.captive? || warrior.feel.wall?
   end
 
   def should_back_away?
@@ -58,10 +65,10 @@ class Player
   end
 
   def set_warrior(received_warrior)
-    @warrior = received_warrior
+    self.warrior = received_warrior
   end
 
   def set_captive_rescued
-    @captive_rescued ||= false
+    self.captive_rescued ||= false
   end
 end
